@@ -1,6 +1,20 @@
 "use client";
 
-export default function ParsedPreviewCard() {
+interface ParsedData {
+  title: string;
+  price: number;
+  description: string;
+  date: string;
+  location: string;
+  sellerName?: string;
+  sourceUrl: string;
+}
+
+interface ParsedPreviewCardProps {
+  data: ParsedData;
+}
+
+export default function ParsedPreviewCard({ data }: ParsedPreviewCardProps) {
   return (
     <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
       <div className="flex items-start gap-3 mb-4">
@@ -21,10 +35,40 @@ export default function ParsedPreviewCard() {
         </div>
         <div className="flex-1">
           <h3 className="font-semibold text-green-900 mb-1">Data hentet!</h3>
-          <p className="text-sm text-green-700">
+          <p className="text-sm text-green-700 mb-3">
             Informasjon fra annonsen er hentet. Du kan nå fylle ut skjemaet
             nedenfor.
           </p>
+
+          {/* Display parsed data */}
+          <div className="bg-white rounded p-4 mb-3">
+            <div className="space-y-2 text-sm">
+              <div>
+                <span className="font-semibold text-gray-700">Tittel:</span>{" "}
+                <span className="text-gray-900">{data.title}</span>
+              </div>
+              <div>
+                <span className="font-semibold text-gray-700">Pris:</span>{" "}
+                <span className="text-gray-900">
+                  {data.price.toLocaleString("no-NO")} kr
+                </span>
+              </div>
+              {data.sellerName && (
+                <div>
+                  <span className="font-semibold text-gray-700">Selger:</span>{" "}
+                  <span className="text-gray-900">{data.sellerName}</span>
+                </div>
+              )}
+              <div>
+                <span className="font-semibold text-gray-700">Lokasjon:</span>{" "}
+                <span className="text-gray-900">{data.location}</span>
+              </div>
+              <div>
+                <span className="font-semibold text-gray-700">Dato:</span>{" "}
+                <span className="text-gray-900">{data.date}</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
