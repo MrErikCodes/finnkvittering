@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as cheerio from "cheerio";
+import * as fs from "fs";
+import * as path from "path";
 
 interface ParseUrlResponse {
   success: boolean;
@@ -61,6 +63,18 @@ export async function POST(request: NextRequest) {
       }
 
       const html = await response.text();
+
+      // Write HTML to file for debugging
+      try {
+        const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+        const filename = `finn-html-${timestamp}.html`;
+        const filepath = path.join(process.cwd(), filename);
+        fs.writeFileSync(filepath, html, "utf-8");
+        console.log(`📄 HTML saved to: ${filename}`);
+      } catch (fileError) {
+        console.error("Failed to save HTML file:", fileError);
+      }
+
       const $ = cheerio.load(html);
 
       // Parse tittel
@@ -125,9 +139,13 @@ export async function POST(request: NextRequest) {
 
       // Parse lokasjon
       const locSelector1 = $('[data-testid="location"]');
-      const locSelector2 = $(".u-mt16").first();
+      const locSelector2 = $('[data-testid="object-address"]');
+      const locSelector3 = $(".u-mt16").first();
       const location =
-        locSelector1.text().trim() || locSelector2.text().trim() || "";
+        locSelector1.text().trim() ||
+        locSelector2.text().trim() ||
+        locSelector3.text().trim() ||
+        "";
 
       // Parse bilder
       const images: string[] = [];
@@ -142,10 +160,292 @@ export async function POST(request: NextRequest) {
       });
 
       // Parse selger (kan være vanskelig å finne)
+      // Try multiple selectors to find seller name
       const sellerSelector1 = $('[data-testid="seller-name"]');
       const sellerSelector2 = $(".profile-name");
-      const sellerName =
-        sellerSelector1.text().trim() || sellerSelector2.text().trim() || "";
+
+      // Method 1: Extract from profile image alt text (e.g., "Profilbilde for Kristin Granlund")
+      // Check ALL images - the profile section might be loaded dynamically
+      const allImages = $("img");
+      const profileImages = allImages.filter((_, el) => {
+        const alt = $(el).attr("alt") || "";
+        const src = $(el).attr("src") || "";
+        // Check if alt contains "profilbilde" or "for" (common pattern)
+        // Also check src for profilbilde path
+        return (
+          alt.toLowerCase().includes("profilbilde") ||
+          src.toLowerCase().includes("profilbilde") ||
+          (alt.toLowerCase().includes("for") &&
+            alt.length > 10 &&
+            alt.length < 100) // Might be "Profilbilde for Name"
+        );
+      });
+
+      // Method 2: Find "På FINN siden" text and look for seller name nearby
+      const finnSidenText = $("*").filter((_, el) => {
+        const text = $(el).text();
+        return /på finn siden/i.test(text);
+      });
+
+      // Search ALL links first, then filter manually (cheerio class selectors can be unreliable)
+      const allLinks = $("a");
+
+      // Very direct check: Links with t4 class that have profile hrefs
+      const directT4ProfileLinks = allLinks.filter((_, el) => {
+        const classes = $(el).attr("class") || "";
+        const href = $(el).attr("href") || "";
+        const text = $(el).text().trim();
+        const hasT4Class =
+          classes.includes("t4") || classes.includes("leading-ml");
+        const isProfileLink =
+          href.includes("/profile/ads") ||
+          (href.includes("/profile") && href.includes("userId"));
+        return Boolean(
+          hasT4Class &&
+            isProfileLink &&
+            text.length > 1 &&
+            text.length < 100 &&
+            /[a-zA-ZæøåÆØÅ]/.test(text)
+        );
+      });
+
+      // Direct check: Links with t4/leading-ml class AND profile href
+      const directSellerLinks = allLinks.filter((_, el) => {
+        const classes = $(el).attr("class") || "";
+        const href = $(el).attr("href") || "";
+        const text = $(el).text().trim();
+        const hasTypographyClass =
+          classes.includes("t4") || classes.includes("leading-ml");
+        const isProfileLink =
+          href.includes("/profile/ads") ||
+          (href.includes("/profile") && href.includes("userId"));
+        return Boolean(
+          hasTypographyClass &&
+            isProfileLink &&
+            text.length > 0 &&
+            text.length < 100 &&
+            /[a-zA-ZæøåÆØÅ]/.test(text)
+        );
+      });
+
+      // Look for links to profile pages
+      const profileLinks = allLinks.filter((_, el) => {
+        const href = $(el).attr("href") || "";
+        const text = $(el).text().trim();
+        const isProfileLink =
+          (href.includes("/profile/ads") || href.includes("/profile")) &&
+          (href.includes("userId") || href.includes("profile"));
+        return Boolean(
+          isProfileLink &&
+            text.length > 0 &&
+            text.length < 100 &&
+            /[a-zA-ZæøåÆØÅ]/.test(text)
+        );
+      });
+
+      // Look for anchor tags with typography classes (t4, t5)
+      const typographyLinks = allLinks.filter((_, el) => {
+        const classes = $(el).attr("class") || "";
+        const text = $(el).text().trim();
+        const hasTypographyClass =
+          classes.includes("t4") || classes.includes("leading-ml");
+        return Boolean(
+          hasTypographyClass && text.length > 2 && text.length < 100
+        );
+      });
+
+      // Look for text near "Verifisert med BankID" or similar verification text
+      const verificationText = $("*").filter((_, el) => {
+        const text = $(el).text();
+        return Boolean(/verifisert/i.test(text) || /bankid/i.test(text));
+      });
+
+      let sellerName = "";
+
+      // Priority 0: Extract from profile image alt text (most reliable!)
+      // Format: "Profilbilde for Kristin Granlund"
+      // Also check ALL images in case profile section is loaded dynamically
+      if (profileImages.length > 0) {
+        for (let i = 0; i < profileImages.length; i++) {
+          const image = profileImages.eq(i);
+          const altText = image.attr("alt") || "";
+
+          // Try multiple patterns to extract the name
+          let nameMatch = altText.match(/profilbilde for (.+)/i);
+          if (!nameMatch) {
+            nameMatch = altText.match(/profilbilde\s+(.+)/i);
+          }
+          if (!nameMatch && altText.toLowerCase().includes("for")) {
+            // Try extracting name after "for" in any context
+            nameMatch = altText.match(
+              /for\s+([A-ZÆØÅ][a-zæøå]+(?:\s+[A-ZÆØÅ][a-zæøå]+)+)/
+            );
+          }
+
+          if (nameMatch && nameMatch[1]) {
+            sellerName = nameMatch[1].trim();
+            sellerName = sellerName.split(/[,\n\r]/)[0].trim();
+            break;
+          }
+        }
+      }
+
+      // Also check ALL images for any alt text containing "for" + name pattern
+      if (!sellerName) {
+        allImages.each((_, el) => {
+          const altText = $(el).attr("alt") || "";
+          if (
+            altText.length > 10 &&
+            altText.length < 100 &&
+            altText.toLowerCase().includes("for")
+          ) {
+            const nameMatch = altText.match(
+              /for\s+([A-ZÆØÅ][a-zæøå]+(?:\s+[A-ZÆØÅ][a-zæøå]+)+)/
+            );
+            if (nameMatch && nameMatch[1]) {
+              sellerName = nameMatch[1].trim();
+              return false; // break
+            }
+          }
+        });
+      }
+
+      // Priority 1: Standard testid selectors
+      if (
+        !sellerName &&
+        sellerSelector1.length &&
+        sellerSelector1.text().trim()
+      ) {
+        sellerName = sellerSelector1.text().trim();
+        console.log("  ✅ Found via Priority 1 (testid):", sellerName);
+      }
+      // Priority 2: Profile name class
+      else if (sellerSelector2.length && sellerSelector2.text().trim()) {
+        sellerName = sellerSelector2.text().trim();
+        console.log(
+          "  ✅ Found via Priority 2 (profile-name class):",
+          sellerName
+        );
+      }
+      // Priority 2.5: Find seller name near "På FINN siden" text
+      if (!sellerName && finnSidenText.length > 0) {
+        // Look for links or text in the same parent container
+        const parent = finnSidenText.first().parent();
+        const links = parent.find("a");
+        console.log(
+          `  Checking parent of "På FINN siden": found ${links.length} links`
+        );
+        links.each((i, el) => {
+          const linkText = $(el).text().trim();
+          const href = $(el).attr("href") || "";
+          const classes = $(el).attr("class") || "";
+          console.log(
+            `    Link ${i}: text="${linkText}", href="${href}", classes="${classes}"`
+          );
+          // If it looks like a name and is near profile content
+          if (
+            linkText.length > 2 &&
+            linkText.length < 100 &&
+            /[a-zA-ZæøåÆØÅ]/.test(linkText) &&
+            (href.includes("profile") ||
+              classes.includes("t4") ||
+              classes.includes("leading-ml"))
+          ) {
+            sellerName = linkText;
+            console.log("  ✅ Found via 'På FINN siden' context:", sellerName);
+            return false; // break
+          }
+        });
+      }
+
+      // Priority 3: Very direct t4 class + profile href (exact pattern match)
+      else if (!sellerName && directT4ProfileLinks.length > 0) {
+        const firstLink = directT4ProfileLinks.first();
+        const linkText = firstLink.text().trim();
+        if (/[a-zA-ZæøåÆØÅ]/.test(linkText) && linkText.length > 1) {
+          sellerName = linkText;
+        }
+      }
+      // Priority 4: Direct seller links (t4/leading-ml class + profile href)
+      else if (!sellerName && directSellerLinks.length > 0) {
+        const firstLink = directSellerLinks.first();
+        const linkText = firstLink.text().trim();
+        if (/[a-zA-ZæøåÆØÅ]/.test(linkText) && linkText.length > 1) {
+          sellerName = linkText;
+        }
+      }
+      // Priority 5: Profile links (fallback)
+      else if (!sellerName && profileLinks.length > 0) {
+        const firstLink = profileLinks.first();
+        const linkText = firstLink.text().trim();
+        if (/[a-zA-ZæøåÆØÅ]/.test(linkText) && linkText.length > 1) {
+          sellerName = linkText;
+        }
+      }
+      // Priority 6: Typography links (t4 class, leading-ml) - these often contain seller names
+      if (!sellerName && typographyLinks.length > 0) {
+        // Try to find the link that's most likely to be a seller name
+        // Prefer links that are near profile-related content
+        for (let i = 0; i < typographyLinks.length; i++) {
+          const link = typographyLinks.eq(i);
+          const linkText = link.text().trim();
+          const href = link.attr("href") || "";
+
+          // If it's a profile link, use it immediately
+          if (
+            href.includes("profile") &&
+            /[a-zA-ZæøåÆØÅ]/.test(linkText) &&
+            linkText.length > 1
+          ) {
+            sellerName = linkText;
+            break;
+          }
+        }
+        // If no profile link found, use the first typography link that looks like a name
+        // Check if it looks like a proper name (two words starting with capital letters)
+        if (!sellerName) {
+          for (let i = 0; i < typographyLinks.length; i++) {
+            const link = typographyLinks.eq(i);
+            const linkText = link.text().trim();
+            // Check if it looks like a name (two words, starts with capital)
+            if (
+              /[a-zA-ZæøåÆØÅ]/.test(linkText) &&
+              linkText.length > 2 &&
+              linkText.length < 100 &&
+              /\s/.test(linkText) // Contains space (likely a full name)
+            ) {
+              sellerName = linkText;
+              break;
+            }
+          }
+          // Last resort: use first typography link if it has reasonable text
+          if (!sellerName) {
+            const firstLink = typographyLinks.first();
+            const linkText = firstLink.text().trim();
+            if (/[a-zA-ZæøåÆØÅ]/.test(linkText) && linkText.length > 1) {
+              sellerName = linkText;
+            }
+          }
+        }
+      }
+      // Priority 5: Text near verification badges
+      else if (verificationText.length > 0) {
+        const parent = verificationText.first().parent();
+        const links = parent.find("a");
+        if (links.length > 0) {
+          const linkText = links.first().text().trim();
+          if (
+            /[a-zA-ZæøåÆØÅ]/.test(linkText) &&
+            linkText.length > 2 &&
+            linkText.length < 100
+          ) {
+            sellerName = linkText;
+          }
+        }
+      }
+
+      // Clean up seller name (remove extra whitespace and newlines)
+      sellerName = sellerName.replace(/\s+/g, " ").trim();
 
       // Parse dato (publiseringsdato)
       const dateSelector1 = $('[data-testid="published-date"]');

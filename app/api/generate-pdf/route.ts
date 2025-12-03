@@ -294,23 +294,22 @@ export async function POST(request: NextRequest) {
       </div>`
           : ""
       }
-    </div>
-
-    <div class="info-section">
-      <h3>Om dette bilaget</h3>
-      <p>Dette bilaget er laget for å oppfylle kravene til egendokumentasjon ved kjøp mellom næringsdrivende og privatpersoner, i henhold til bokføringsforskriften §5-5. Bilaget inneholder all nødvendig informasjon om transaksjonen og kan brukes som grunnlag for regnskapsføring.</p>
-    </div>
-
-    <div class="tips-section">
-      <strong>Tips:</strong> Skjermbilde av betalingstransaksjonen kan legges ved dette bilaget for ekstra dokumentasjon.
+      ${
+        body.notes
+          ? `<div class="field-row">
+        <div class="field-label">Kommentarer:</div>
+        <div class="field-value-full" style="white-space: pre-wrap;">${escapeHtml(
+          body.notes
+        )}</div>
+      </div>`
+          : ""
+      }
     </div>
 
     <div class="signature-section">
-      <div class="signature-title">Bekreftet av selger:</div>
+      <div class="signature-title">Signatur av selger: <span style="font-size: 9pt; font-weight: normal; color: #666;">(Valgfritt)</span></div>
       <div class="signature-box">
-        <div class="signature-label">Signatur: ${escapeHtml(
-          body.sellerName
-        )}</div>
+        
         <div class="signature-note">Dato: ${formatDate(body.date)}</div>
       </div>
     </div>
@@ -318,6 +317,12 @@ export async function POST(request: NextRequest) {
 
   <div class="footer">
     <p>Generert med FinnKvittering.no – gratis bilaggenerator for Finn.no kjøp</p>
+    <p style="margin-top: 8px; font-size: 7pt; line-height: 1.3;">
+      Dette bilaget er laget for å oppfylle kravene til egendokumentasjon ved kjøp mellom næringsdrivende og privatpersoner, i henhold til bokføringsforskriften §5-5. Bilaget inneholder all nødvendig informasjon om transaksjonen og kan brukes som grunnlag for regnskapsføring.
+    </p>
+    <p style="margin-top: 6px; font-size: 7pt; font-style: italic;">
+      Tips: Skjermbilde av betalingstransaksjonen kan legges ved dette bilaget for ekstra dokumentasjon.
+    </p>
   </div>
 </body>
 </html>
