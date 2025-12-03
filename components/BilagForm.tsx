@@ -37,6 +37,7 @@ export default function BilagForm({
     handleSubmit,
     formState: { errors },
     reset,
+    getValues,
   } = useForm<BilagFormData>({
     resolver: zodResolver(bilagSchema),
     defaultValues: {
@@ -47,12 +48,37 @@ export default function BilagForm({
 
   useEffect(() => {
     if (initialData) {
-      reset({
-        date: initialData.date || new Date().toISOString().split("T")[0],
-        ...initialData,
-      });
+      // Get current form values to preserve user input
+      const currentValues = getValues();
+
+      // Merge initialData with current values, preserving non-empty current values
+      const mergedData: Partial<BilagFormData> = {
+        date:
+          initialData.date ||
+          currentValues.date ||
+          new Date().toISOString().split("T")[0],
+        price: initialData.price ?? currentValues.price,
+        sellerName:
+          initialData.sellerName && initialData.sellerName.trim()
+            ? initialData.sellerName
+            : currentValues.sellerName || "",
+        buyerName:
+          initialData.buyerName && initialData.buyerName.trim()
+            ? initialData.buyerName
+            : currentValues.buyerName || "",
+        paymentMethod:
+          initialData.paymentMethod && initialData.paymentMethod.trim()
+            ? initialData.paymentMethod
+            : currentValues.paymentMethod || "",
+        location: initialData.location ?? currentValues.location,
+        notes: initialData.notes ?? currentValues.notes,
+        sourceUrl: initialData.sourceUrl ?? currentValues.sourceUrl,
+        title: initialData.title ?? currentValues.title,
+      };
+
+      reset(mergedData);
     }
-  }, [initialData, reset]);
+  }, [initialData, reset, getValues]);
 
   const handleFormSubmit = (data: BilagFormData) => {
     onSubmit(data);
