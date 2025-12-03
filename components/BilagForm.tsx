@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 
 const bilagSchema = z.object({
-  date: z.string().min(1, 'Kjøpsdato er påkrevd'),
-  price: z.coerce.number().positive('Pris må være et positivt tall'),
-  sellerName: z.string().min(1, 'Selgernavn er påkrevd'),
-  buyerName: z.string().min(1, 'Kjøpernavn er påkrevd'),
-  paymentMethod: z.string().min(1, 'Betalingsmåte er påkrevd'),
+  date: z.string().min(1, "Kjøpsdato er påkrevd"),
+  price: z.number().positive("Pris må være et positivt tall"),
+  sellerName: z.string().min(1, "Selgernavn er påkrevd"),
+  buyerName: z.string().min(1, "Kjøpernavn er påkrevd"),
+  paymentMethod: z.string().min(1, "Betalingsmåte er påkrevd"),
   location: z.string().optional(),
   notes: z.string().optional(),
   sourceUrl: z.string().optional(),
@@ -37,11 +37,10 @@ export default function BilagForm({
     handleSubmit,
     formState: { errors },
     reset,
-    watch,
   } = useForm<BilagFormData>({
     resolver: zodResolver(bilagSchema),
     defaultValues: {
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toISOString().split("T")[0],
       ...initialData,
     },
   });
@@ -49,7 +48,7 @@ export default function BilagForm({
   useEffect(() => {
     if (initialData) {
       reset({
-        date: initialData.date || new Date().toISOString().split('T')[0],
+        date: initialData.date || new Date().toISOString().split("T")[0],
         ...initialData,
       });
     }
@@ -69,26 +68,32 @@ export default function BilagForm({
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="title"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Vare/Tjeneste (valgfritt)
           </label>
           <input
             type="text"
             id="title"
-            {...register('title')}
+            {...register("title")}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="F.eks. Brukt bil, Møbler..."
           />
         </div>
 
         <div>
-          <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="date"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Kjøpsdato *
           </label>
           <input
             type="date"
             id="date"
-            {...register('date')}
+            {...register("date")}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           {errors.date && (
@@ -97,14 +102,17 @@ export default function BilagForm({
         </div>
 
         <div>
-          <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="price"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Pris (NOK) *
           </label>
           <input
             type="number"
             id="price"
             step="0.01"
-            {...register('price')}
+            {...register("price", { valueAsNumber: true })}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="0"
           />
@@ -114,44 +122,57 @@ export default function BilagForm({
         </div>
 
         <div>
-          <label htmlFor="sellerName" className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="sellerName"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Selger *
           </label>
           <input
             type="text"
             id="sellerName"
-            {...register('sellerName')}
+            {...register("sellerName")}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Navn på selger"
           />
           {errors.sellerName && (
-            <p className="mt-1 text-sm text-red-600">{errors.sellerName.message}</p>
+            <p className="mt-1 text-sm text-red-600">
+              {errors.sellerName.message}
+            </p>
           )}
         </div>
 
         <div>
-          <label htmlFor="buyerName" className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="buyerName"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Kjøper *
           </label>
           <input
             type="text"
             id="buyerName"
-            {...register('buyerName')}
+            {...register("buyerName")}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Ditt navn"
           />
           {errors.buyerName && (
-            <p className="mt-1 text-sm text-red-600">{errors.buyerName.message}</p>
+            <p className="mt-1 text-sm text-red-600">
+              {errors.buyerName.message}
+            </p>
           )}
         </div>
 
         <div>
-          <label htmlFor="paymentMethod" className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="paymentMethod"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Betalingsmåte *
           </label>
           <select
             id="paymentMethod"
-            {...register('paymentMethod')}
+            {...register("paymentMethod")}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">Velg betalingsmåte</option>
@@ -162,44 +183,55 @@ export default function BilagForm({
             <option value="Annet">Annet</option>
           </select>
           {errors.paymentMethod && (
-            <p className="mt-1 text-sm text-red-600">{errors.paymentMethod.message}</p>
+            <p className="mt-1 text-sm text-red-600">
+              {errors.paymentMethod.message}
+            </p>
           )}
         </div>
 
         <div>
-          <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="location"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Sted (valgfritt)
           </label>
           <input
             type="text"
             id="location"
-            {...register('location')}
+            {...register("location")}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="F.eks. Oslo, Bergen..."
           />
         </div>
 
         <div className="md:col-span-2">
-          <label htmlFor="sourceUrl" className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="sourceUrl"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Annonselenke (valgfritt)
           </label>
           <input
             type="url"
             id="sourceUrl"
-            {...register('sourceUrl')}
+            {...register("sourceUrl")}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="https://www.finn.no/..."
           />
         </div>
 
         <div className="md:col-span-2">
-          <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="notes"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Kommentarer (valgfritt)
           </label>
           <textarea
             id="notes"
             rows={4}
-            {...register('notes')}
+            {...register("notes")}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Ekstra informasjon om transaksjonen..."
           />
@@ -220,10 +252,9 @@ export default function BilagForm({
           disabled={isLoading}
           className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
         >
-          {isLoading ? 'Genererer...' : 'Generer og last ned PDF'}
+          {isLoading ? "Genererer..." : "Generer og last ned PDF"}
         </button>
       </div>
     </form>
   );
 }
-
