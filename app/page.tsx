@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import Script from "next/script";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import UrlInput from "@/components/UrlInput";
 import ParsedPreviewCard from "@/components/ParsedPreviewCard";
 import BilagForm, { BilagFormData } from "@/components/BilagForm";
 import PDFPreview from "@/components/PDFPreview";
+import { analytics } from "@/lib/analytics";
 
 interface ParsedData {
   title: string;
@@ -23,6 +25,17 @@ export default function Home() {
   const [isParsing, setIsParsing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  // Track page view on mount
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.rybbit?.pageview) {
+      try {
+        window.rybbit.pageview();
+      } catch (error) {
+        console.debug("Failed to track pageview:", error);
+      }
+    }
+  }, []);
 
   const handleParseUrl = async (url: string) => {
     setIsParsing(true);
@@ -41,12 +54,43 @@ export default function Home() {
 
       if (result.success && result.data) {
         setParsedData(result.data);
+        // Track successful URL parsing
+        analytics.urlParsed({
+          success: true,
+          hasPrice: !!result.data.price,
+          hasTitle: !!result.data.title,
+        });
       } else {
-        alert(result.error || "Kunne ikke hente data fra URL");
+        const errorMessage = result.error || "Kunne ikke hente data fra URL";
+        alert(errorMessage);
+        // Track failed URL parsing
+        analytics.urlParsed({
+          success: false,
+          error: errorMessage,
+        });
+        analytics.error({
+          type: "url_parse_failed",
+          message: errorMessage,
+          context: "parse_url",
+        });
       }
     } catch (error) {
       console.error("Parse error:", error);
-      alert("En feil oppstod ved henting av data");
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "En feil oppstod ved henting av data";
+      alert(errorMessage);
+      // Track error
+      analytics.urlParsed({
+        success: false,
+        error: errorMessage,
+      });
+      analytics.error({
+        type: "url_parse_error",
+        message: errorMessage,
+        context: "parse_url",
+      });
     } finally {
       setIsParsing(false);
     }
@@ -75,11 +119,24 @@ export default function Home() {
         } catch {
           errorMessage = `Server feil: ${response.status} ${response.statusText}`;
         }
+        // Track PDF generation error
+        analytics.error({
+          type: "pdf_generation_failed",
+          message: errorMessage,
+          context: preview ? "preview" : "download",
+        });
         throw new Error(errorMessage);
       }
 
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
+
+      // Track PDF generation
+      analytics.generated({
+        preview: preview,
+        price: data.price,
+        hasSourceUrl: !!data.sourceUrl,
+      });
 
       if (preview) {
         // Revoke previous URL if exists
@@ -87,6 +144,11 @@ export default function Home() {
           URL.revokeObjectURL(previewUrl);
         }
         setPreviewUrl(url);
+        // Track preview event
+        analytics.previewed({
+          price: data.price,
+          hasSourceUrl: !!data.sourceUrl,
+        });
       } else {
         // Last ned PDF
         const link = document.createElement("a");
@@ -99,6 +161,11 @@ export default function Home() {
         document.body.removeChild(link);
         // Revoke URL after a short delay to ensure download starts
         setTimeout(() => URL.revokeObjectURL(url), 100);
+        // Track download event
+        analytics.downloaded({
+          price: data.price,
+          hasSourceUrl: !!data.sourceUrl,
+        });
       }
     } catch (error) {
       console.error("PDF generation error:", error);
@@ -117,11 +184,76 @@ export default function Home() {
   };
 
   const handleSubmit = (data: BilagFormData) => {
+    // Track form submission
+    analytics.formSubmitted({
+      hasParsedData: !!parsedData,
+      price: data.price,
+    });
     handleGeneratePdf(data, false);
+  };
+
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: [
+      {
+        "@type": "Question",
+        name: "Hva er Finn Kvittering?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Finn Kvittering er en tjeneste som hjelper deg med å generere profesjonelle kvitteringer og regnskapsbilag basert på annonser fra Finn.no. Tjenesten henter automatisk informasjon fra annonsen og lar deg fylle ut resten av detaljene før du genererer et printklart PDF-dokument.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Er kvitteringene gyldige for regnskapsføring?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Ja, kvitteringene generert av Finn Kvittering er egendokumentasjon i henhold til bokføringsforskriften §5-5. De inneholder alle nødvendige felter for regnskapsføring og kan brukes som dokumentasjon for kjøp og salg.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Lagres dataene mine?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Nei, alle data behandles lokalt i nettleseren din. Vi lagrer ingen personopplysninger, transaksjonsdata eller annonser. PDF-filer genereres på forespørsel og lastes ned direkte til din enhet uten lagring på våre servere.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Fungerer det med alle Finn.no-annonser?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Tjenesten fungerer best med aktive annonser på Finn.no. Hvis en annonse er blokkert for automatisk henting eller krever innlogging, kan du fortsatt fylle ut skjemaet manuelt med informasjonen du har.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Kan jeg bruke dette for flere transaksjoner?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Ja, du kan bruke tjenesten så mange ganger du vil. Hver kvittering får et unikt bilagsnummer, og du kan generere så mange dokumenter du trenger.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Hva koster tjenesten?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Finn Kvittering er gratis å bruke. Du kan generere så mange kvitteringer du trenger uten kostnad eller registrering.",
+        },
+      },
+    ],
   };
 
   return (
     <div className="min-h-screen flex flex-col">
+      <Script
+        id="faq-schema"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
       <Header />
 
       <main className="flex-1 container mx-auto px-4 py-8 max-w-4xl">

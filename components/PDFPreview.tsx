@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { analytics } from '@/lib/analytics';
 
 interface PDFPreviewProps {
   pdfUrl: string | null;
@@ -80,6 +81,11 @@ export default function PDFPreview({ pdfUrl, onClose }: PDFPreviewProps) {
           <a
             href={pdfUrl}
             download
+            onClick={() => {
+              analytics.downloaded({
+                source: 'preview_modal',
+              });
+            }}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             Last ned PDF

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { analytics } from '@/lib/analytics';
 
 interface UrlInputProps {
   onParse: (url: string) => void;
@@ -17,12 +18,22 @@ export default function UrlInput({ onParse, isLoading }: UrlInputProps) {
 
     if (!url.trim()) {
       setError('Vennligst lim inn en Finn.no-URL');
+      analytics.error({
+        type: "url_validation",
+        message: "Empty URL submitted",
+        context: "url_input",
+      });
       return;
     }
 
     const finnPattern = /^https?:\/\/(www\.)?(finn\.no|finn\.no\/.*)/i;
     if (!finnPattern.test(url)) {
       setError('URL må være fra Finn.no');
+      analytics.error({
+        type: "url_validation",
+        message: "Invalid URL domain",
+        context: "url_input",
+      });
       return;
     }
 
