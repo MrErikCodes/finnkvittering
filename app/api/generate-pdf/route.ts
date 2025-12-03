@@ -370,12 +370,8 @@ export async function POST(request: NextRequest) {
       });
 
       // Close page and browser before returning response
-      await page.close().catch((err) => {
-        console.error("Error closing page:", err);
-      });
-      await browser.close().catch((err) => {
-        console.error("Error closing browser:", err);
-      });
+      await page.close().catch(() => {});
+      await browser.close().catch(() => {});
 
       // Returner PDF som binary
       return new Response(Buffer.from(pdfBuffer), {
@@ -388,19 +384,14 @@ export async function POST(request: NextRequest) {
     } catch (puppeteerError) {
       // Ensure cleanup on error
       if (page) {
-        await page.close().catch((err) => {
-          console.error("Error closing page in catch:", err);
-        });
+        await page.close().catch(() => {});
       }
       if (browser) {
-        await browser.close().catch((err) => {
-          console.error("Error closing browser in catch:", err);
-        });
+        await browser.close().catch(() => {});
       }
       throw puppeteerError;
     }
   } catch (error) {
-    console.error("PDF generation error:", error);
     const errorMessage =
       error instanceof Error
         ? error.message

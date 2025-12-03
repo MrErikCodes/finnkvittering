@@ -1,23 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as cheerio from "cheerio";
-import * as fs from "fs";
-import * as path from "path";
-
-interface ParseUrlResponse {
-  success: boolean;
-  data?: {
-    title: string;
-    price: number;
-    description: string;
-    date: string;
-    location: string;
-    images: string[];
-    sellerName?: string;
-    sourceUrl: string;
-  };
-  warnings?: string[];
-  error?: string;
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -63,17 +45,6 @@ export async function POST(request: NextRequest) {
       }
 
       const html = await response.text();
-
-      // Write HTML to file for debugging
-      try {
-        const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-        const filename = `finn-html-${timestamp}.html`;
-        const filepath = path.join(process.cwd(), filename);
-        fs.writeFileSync(filepath, html, "utf-8");
-        console.log(`📄 HTML saved to: ${filename}`);
-      } catch (fileError) {
-        console.error("Failed to save HTML file:", fileError);
-      }
 
       const $ = cheerio.load(html);
 
@@ -317,31 +288,20 @@ export async function POST(request: NextRequest) {
         sellerSelector1.text().trim()
       ) {
         sellerName = sellerSelector1.text().trim();
-        console.log("  ✅ Found via Priority 1 (testid):", sellerName);
       }
       // Priority 2: Profile name class
       else if (sellerSelector2.length && sellerSelector2.text().trim()) {
         sellerName = sellerSelector2.text().trim();
-        console.log(
-          "  ✅ Found via Priority 2 (profile-name class):",
-          sellerName
-        );
       }
       // Priority 2.5: Find seller name near "På FINN siden" text
       if (!sellerName && finnSidenText.length > 0) {
         // Look for links or text in the same parent container
         const parent = finnSidenText.first().parent();
         const links = parent.find("a");
-        console.log(
-          `  Checking parent of "På FINN siden": found ${links.length} links`
-        );
         links.each((i, el) => {
           const linkText = $(el).text().trim();
           const href = $(el).attr("href") || "";
           const classes = $(el).attr("class") || "";
-          console.log(
-            `    Link ${i}: text="${linkText}", href="${href}", classes="${classes}"`
-          );
           // If it looks like a name and is near profile content
           if (
             linkText.length > 2 &&
@@ -352,7 +312,6 @@ export async function POST(request: NextRequest) {
               classes.includes("leading-ml"))
           ) {
             sellerName = linkText;
-            console.log("  ✅ Found via 'På FINN siden' context:", sellerName);
             return false; // break
           }
         });
