@@ -68,8 +68,14 @@ export default function Home() {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Kunne ikke generere PDF");
+        let errorMessage = "Kunne ikke generere PDF";
+        try {
+          const error = await response.json();
+          errorMessage = error.error || errorMessage;
+        } catch {
+          errorMessage = `Server feil: ${response.status} ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
 
       const blob = await response.blob();
@@ -96,7 +102,11 @@ export default function Home() {
       }
     } catch (error) {
       console.error("PDF generation error:", error);
-      alert("En feil oppstod ved generering av PDF");
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "En feil oppstod ved generering av PDF";
+      alert(errorMessage);
     } finally {
       setIsGenerating(false);
     }

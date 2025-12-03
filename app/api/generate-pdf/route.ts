@@ -324,44 +324,83 @@ export async function POST(request: NextRequest) {
     `;
 
     // Generer PDF med Puppeteer
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    let browser;
+    let page;
+    try {
+      browser = await puppeteer.launch({
+        headless: true,
+        args: [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-accelerated-2d-canvas",
+          "--no-first-run",
+        ],
+      });
 
-    const page = await browser.newPage();
-    await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+      page = await browser.newPage();
 
-    // Sett viewport størrelse for å sikre én side
-    await page.setViewport({ width: 794, height: 1123 }); // A4 i pixels (72 DPI)
+      // Sett viewport størrelse først
+      await page.setViewport({ width: 794, height: 1123 }); // A4 i pixels (72 DPI)
 
-    const pdfBuffer = await page.pdf({
-      format: "A4",
-      printBackground: true,
-      margin: {
-        top: "0",
-        right: "0",
-        bottom: "0",
-        left: "0",
-      },
-      preferCSSPageSize: false,
-    });
+      await page.setContent(htmlContent, {
+        waitUntil: "load",
+        timeout: 30000,
+      });
 
-    await browser.close();
+      // Small delay to ensure rendering is complete
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
-    // Returner PDF som binary
-    return new Response(Buffer.from(pdfBuffer), {
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename="kvittering-${bilagsnummer}.pdf"`,
-        "Content-Length": pdfBuffer.length.toString(),
-      },
-    });
-  } catch {
-    return NextResponse.json(
-      { error: "En feil oppstod ved generering av PDF" },
-      { status: 500 }
-    );
+      const pdfBuffer = await page.pdf({
+        format: "A4",
+        printBackground: true,
+        margin: {
+          top: "0",
+          right: "0",
+          bottom: "0",
+          left: "0",
+        },
+        preferCSSPageSize: false,
+        timeout: 30000,
+      });
+
+      // Close page and browser before returning response
+      await page.close().catch((err) => {
+        console.error("Error closing page:", err);
+      });
+      await browser.close().catch((err) => {
+        console.error("Error closing browser:", err);
+      });
+
+      // Returner PDF som binary
+      return new Response(Buffer.from(pdfBuffer), {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Disposition": `inline; filename="kvittering-${bilagsnummer}.pdf"`,
+          "Content-Length": pdfBuffer.length.toString(),
+        },
+      });
+    } catch (puppeteerError) {
+      // Ensure cleanup on error
+      if (page) {
+        await page.close().catch((err) => {
+          console.error("Error closing page in catch:", err);
+        });
+      }
+      if (browser) {
+        await browser.close().catch((err) => {
+          console.error("Error closing browser in catch:", err);
+        });
+      }
+      throw puppeteerError;
+    }
+  } catch (error) {
+    console.error("PDF generation error:", error);
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "En feil oppstod ved generering av PDF";
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
 
