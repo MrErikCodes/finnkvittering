@@ -29,6 +29,7 @@ export default function Footer() {
         </div>
         <div className="mt-8 pt-6 border-t border-gray-200 text-center text-sm text-gray-500">
           <p>&copy; {new Date().getFullYear()} Finn Kvittering. Drevet av Nilsen Konsult org.nr: 931405861 MVA Alle rettigheter forbeholdt.</p>
+          <p>FINN.no er en del av Vend. Vi er ikke affiliert med dem, og dette produktet har ingen ting med Vend å gjøre</p>
         </div>
       </div>
     </footer>
