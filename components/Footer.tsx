@@ -16,14 +16,14 @@ export default function Footer() {
             <p className="text-sm text-gray-600">
               Alle data behandles lokalt i nettleseren din. Vi lagrer ingen personopplysninger, 
               transaksjonsdata eller annonser. PDF-filer genereres på forespørsel og lastes ned 
-              direkte til din enhet. Vi bruker ikke cookies eller sporingsteknologi.
+              direkte til din enhet. Vi bruker ikke cookies.
             </p>
           </div>
           <div>
             <h3 className="font-semibold text-gray-900 mb-3">Kontakt</h3>
             <p className="text-sm text-gray-600">
               Har du spørsmål eller tilbakemeldinger? Vi setter pris på din input for å forbedre 
-              tjenesten vår.
+              tjenesten vår. Kontakt oss på erik@nilsenkonsult.no
             </p>
           </div>
         </div>
