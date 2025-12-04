@@ -2,37 +2,72 @@ export default function Footer() {
   return (
     <footer className="border-t border-gray-200 bg-gray-50 mt-auto">
       <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
-            <h3 className="font-semibold text-gray-900 mb-3">Om Finn Kvittering</h3>
+            <h3 className="font-semibold text-gray-900 mb-3">
+              Om Finn Kvittering
+            </h3>
             <p className="text-sm text-gray-600">
-              Finn Kvittering hjelper deg med å generere profesjonelle kvitteringer og regnskapsbilag 
-              direkte fra Finn.no-annonser. Perfekt for privatpersoner og småbedrifter som trenger 
-              rask dokumentasjon av kjøp og salg.
+              Finn Kvittering hjelper deg med å generere profesjonelle
+              kvitteringer og regnskapsbilag direkte fra Finn.no-annonser.
+              Perfekt for privatpersoner og småbedrifter som trenger rask
+              dokumentasjon av kjøp og salg.
             </p>
           </div>
           <div>
             <h3 className="font-semibold text-gray-900 mb-3">Personvern</h3>
             <p className="text-sm text-gray-600">
-              Alle data behandles lokalt i nettleseren din. Vi lagrer ingen personopplysninger, 
-              transaksjonsdata eller annonser. PDF-filer genereres på forespørsel og lastes ned 
-              direkte til din enhet. Vi bruker ikke cookies.
+              Alle data behandles lokalt i nettleseren din. Vi lagrer ingen
+              personopplysninger, transaksjonsdata eller annonser. PDF-filer
+              genereres på forespørsel og lastes ned direkte til din enhet. Vi
+              bruker ikke cookies. Vi benytter Rybbit for å samle inn anonyme
+              data om bruk av tjenesten.
             </p>
           </div>
           <div>
             <h3 className="font-semibold text-gray-900 mb-3">Kontakt</h3>
             <p className="text-sm text-gray-600">
-              Har du spørsmål eller tilbakemeldinger? Vi setter pris på din input for å forbedre 
-              tjenesten vår. Kontakt oss på erik@nilsenkonsult.no
+              Har du spørsmål eller tilbakemeldinger? Vi setter pris på din
+              input for å forbedre tjenesten vår. Kontakt oss på
+              erik@nilsenkonsult.no
+            </p>
+          </div>
+          <div>
+            <h3 className="font-semibold text-gray-900 mb-3">Kildekode</h3>
+            <p className="text-sm text-gray-600">
+              <a
+                href="https://github.com/MrErikCodes/finnkvittering"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800 underline"
+              >
+                Kildekode finnes på GitHub
+              </a>
             </p>
           </div>
         </div>
         <div className="mt-8 pt-6 border-t border-gray-200 text-center text-sm text-gray-500">
-          <p>&copy; {new Date().getFullYear()} Finn Kvittering. Drevet av Nilsen Konsult org.nr: 931405861 MVA Alle rettigheter forbeholdt.</p>
-          <p>FINN.no er en del av Vend. Vi er ikke affiliert med dem, og dette produktet har ingen ting med Vend å gjøre</p>
+          <p>
+            &copy; {new Date().getFullYear()} Finn Kvittering. Drevet av Nilsen
+            Konsult org.nr: 931405861 MVA Alle rettigheter forbeholdt.
+          </p>
+          <p>
+            FINN.no er en del av Vend. Vi er ikke affiliert med dem, og dette
+            produktet har ingen ting med Vend å gjøre
+          </p>
+          <p className="mt-2">
+            Laget av{" "}
+            <a
+              href="https://erik.no"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:text-blue-800 underline"
+            >
+              Erik
+            </a>
+          </p>
         </div>
       </div>
     </footer>
   );
 }
-
