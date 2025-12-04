@@ -38,6 +38,12 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 Open source - feel free to use and modify as needed!
 
+## Disclaimer
+
+**No support is given. Use at own risk.**
+
+No need to credit, but would love if you did.
+
 ---
 
 Made with Energy Drinks by Erik | [erik.no](https://erik.no) | 100% AI
