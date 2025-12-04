@@ -28,7 +28,7 @@ export default function Footer() {
           </div>
         </div>
         <div className="mt-8 pt-6 border-t border-gray-200 text-center text-sm text-gray-500">
-          <p>&copy; {new Date().getFullYear()} Finn Kvittering. Alle rettigheter forbeholdt.</p>
+          <p>&copy; {new Date().getFullYear()} Finn Kvittering. Drevet av Nilsen Konsult org.nr: 931405861 MVA Alle rettigheter forbeholdt.</p>
         </div>
       </div>
     </footer>
